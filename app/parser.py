@@ -1,4 +1,4 @@
-import fitz  # PyMuPDF
+import pymupdf as fitz
 import pdfplumber
 import base64
 import os
@@ -17,7 +17,7 @@ def encode_image_to_base64(image: Image.Image) -> str:
     image.save(buffer, format="PNG")
     return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
-def interpret_image_with_gemini(image: Image.Image, page_num: int) -> str:
+def interpret_page_with_gemini(image: Image.Image, page_num: int) -> str:
     b64 = encode_image_to_base64(image)
     response = client.models.generate_content(
         model="gemini-3.6-flash",
@@ -26,7 +26,15 @@ def interpret_image_with_gemini(image: Image.Image, page_num: int) -> str:
                 data=base64.b64decode(b64),
                 mime_type="image/png"
             ),
-            "Kamu adalah analis dokumen keuangan. Deskripsikan secara detail semua informasi yang ada pada gambar/grafik/infografis ini. Jika ada angka, persentase, atau data, sebutkan semuanya secara eksplisit. Jawab dalam Bahasa Indonesia."
+            """Kamu adalah analis dokumen keuangan. 
+Analisis halaman dokumen ini secara menyeluruh.
+Fokus pada:
+1. Tabel - ekstrak semua data angka dengan label yang tepat
+2. Grafik/Chart - deskripsikan semua nilai, persentase, dan label dengan tepat sesuai warna/posisi
+3. Infografis - jelaskan alur atau informasi secara detail dan berurutan
+4. Teks penting yang tidak terbaca dari ekstraksi biasa
+
+Jawab dalam Bahasa Indonesia secara detail dan akurat."""
         ]
     )
     return response.text
@@ -73,27 +81,22 @@ def parse_pdf(pdf_path: str) -> list:
                     "type": "table"
                 })
 
-        # 3. Ekstrak gambar
-        image_list = page.get_images(full=True)
-        for img_index, img in enumerate(image_list):
-            xref = img[0]
-            base_image = doc.extract_image(xref)
-            image_bytes = base_image["image"]
-            image = Image.open(io.BytesIO(image_bytes))
+        # 3. Render halaman sebagai gambar dan kirim ke Gemini Vision
+        print(f"Menginterpretasi visual halaman {page_label}...")
+        try:
+            mat = fitz.Matrix(2, 2)  # scale 2x untuk kualitas lebih baik
+            pix = page.get_pixmap(matrix=mat)
+            img_bytes = pix.tobytes("png")
+            image = Image.open(io.BytesIO(img_bytes))
 
-            # Skip gambar terlalu kecil (icon, dekorasi)
-            if image.width < 100 or image.height < 100:
-                continue
-
-            try:
-                description = interpret_image_with_gemini(image, page_label)
-                chunks.append({
-                    "content": f"[GAMBAR/GRAFIK - Halaman {page_label}]\n{description}",
-                    "page": page_label,
-                    "type": "image"
-                })
-            except Exception as e:
-                print(f"Gagal interpretasi gambar hal {page_label}: {e}")
+            description = interpret_page_with_gemini(image, page_label)
+            chunks.append({
+                "content": f"[VISUAL - Halaman {page_label}]\n{description}",
+                "page": page_label,
+                "type": "image"
+            })
+        except Exception as e:
+            print(f"Gagal interpretasi visual hal {page_label}: {e}")
 
     doc.close()
     return chunks
