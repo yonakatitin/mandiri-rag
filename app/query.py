@@ -1,5 +1,5 @@
 import os
-import google.generativeai as genai
+from google import genai
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.vectorstore import retrieve_chunks
@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
 router = APIRouter()
 
@@ -48,8 +48,10 @@ Pertanyaan: {request.question}
 Jawaban:"""
         
         # 4. Generate jawaban dengan Gemini
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt
+        )
         
         # 5. Susun metadata sumber
         sources = []

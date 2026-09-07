@@ -4,12 +4,13 @@ import base64
 import os
 from PIL import Image
 import io
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 
 load_dotenv()
 
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
 def encode_image_to_base64(image: Image.Image) -> str:
     buffer = io.BytesIO()
@@ -17,21 +18,17 @@ def encode_image_to_base64(image: Image.Image) -> str:
     return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
 def interpret_image_with_gemini(image: Image.Image, page_num: int) -> str:
-    model = genai.GenerativeModel("gemini-1.5-flash")
     b64 = encode_image_to_base64(image)
-    image_part = {
-        "inline_data": {
-            "mime_type": "image/png",
-            "data": b64
-        }
-    }
-    prompt = (
-        "Kamu adalah analis dokumen keuangan. "
-        "Deskripsikan secara detail semua informasi yang ada pada gambar/grafik/infografis ini. "
-        "Jika ada angka, persentase, atau data, sebutkan semuanya secara eksplisit. "
-        "Jawab dalam Bahasa Indonesia."
+    response = client.models.generate_content(
+        model="gemini-1.5-flash",
+        contents=[
+            types.Part.from_bytes(
+                data=base64.b64decode(b64),
+                mime_type="image/png"
+            ),
+            "Kamu adalah analis dokumen keuangan. Deskripsikan secara detail semua informasi yang ada pada gambar/grafik/infografis ini. Jika ada angka, persentase, atau data, sebutkan semuanya secara eksplisit. Jawab dalam Bahasa Indonesia."
+        ]
     )
-    response = model.generate_content([prompt, image_part])
     return response.text
 
 def extract_tables_from_page(pdf_path: str, page_num: int) -> list:
