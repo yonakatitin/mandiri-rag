@@ -1,6 +1,6 @@
 import os
 import chromadb
-from chromadb.utils import embedding_functions
+from google import genai
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -8,15 +8,19 @@ load_dotenv()
 CHROMA_PATH = "chroma_db"
 COLLECTION_NAME = "mandiri_rag"
 
+google_client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+
+def get_embedding(text: str) -> list:
+    response = google_client.models.embed_content(
+        model="models/text-embedding-004",
+        contents=text
+    )
+    return response.embeddings[0].values
+
 def get_collection():
     client = chromadb.PersistentClient(path=CHROMA_PATH)
-    embedding_fn = embedding_functions.GoogleGenerativeAiEmbeddingFunction(
-        api_key=os.getenv("GOOGLE_API_KEY"),
-        model_name="models/text-embedding-004"
-    )
     collection = client.get_or_create_collection(
         name=COLLECTION_NAME,
-        embedding_function=embedding_fn
     )
     return collection
 
@@ -26,22 +30,26 @@ def store_chunks(chunks: list):
     documents = []
     metadatas = []
     ids = []
+    embeddings = []
     
     for i, chunk in enumerate(chunks):
+        print(f"Embedding chunk {i+1}/{len(chunks)}...")
+        embedding = get_embedding(chunk["content"])
         documents.append(chunk["content"])
         metadatas.append({
             "page": chunk["page"],
             "type": chunk["type"]
         })
         ids.append(f"chunk_{i}")
+        embeddings.append(embedding)
     
-    # Simpan ke ChromaDB dalam batch
     batch_size = 50
     for i in range(0, len(documents), batch_size):
         collection.add(
             documents=documents[i:i+batch_size],
             metadatas=metadatas[i:i+batch_size],
-            ids=ids[i:i+batch_size]
+            ids=ids[i:i+batch_size],
+            embeddings=embeddings[i:i+batch_size]
         )
     
     return len(documents)
@@ -49,8 +57,10 @@ def store_chunks(chunks: list):
 def retrieve_chunks(query: str, n_results: int = 5) -> list:
     collection = get_collection()
     
+    query_embedding = get_embedding(query)
+    
     results = collection.query(
-        query_texts=[query],
+        query_embeddings=[query_embedding],
         n_results=n_results
     )
     
