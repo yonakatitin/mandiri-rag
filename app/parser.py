@@ -7,6 +7,7 @@ import io
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+import time
 
 load_dotenv()
 
@@ -17,15 +18,15 @@ def encode_image_to_base64(image: Image.Image) -> str:
     image.save(buffer, format="PNG")
     return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
-import time
-
 def interpret_page_with_gemini(image: Image.Image, page_num: int, max_retries: int = 3) -> str:
     b64 = encode_image_to_base64(image)
     
     for attempt in range(max_retries):
+        time.sleep(3)
         try:
             response = client.models.generate_content(
-                model="gemini-3.6-flash",
+                # model="gemini-3.6-flash",
+                model="gemini-2.5-flash-lite",
                 contents=[
                     types.Part.from_bytes(
                         data=base64.b64decode(b64),
