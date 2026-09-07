@@ -12,8 +12,8 @@ google_client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
 def get_embedding(text: str) -> list:
     response = google_client.models.embed_content(
-        model="models/text-embedding-004",
-        contents=text
+        model="gemini-embedding-001",
+        contents=text,
     )
     return response.embeddings[0].values
 
