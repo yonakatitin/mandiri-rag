@@ -20,7 +20,7 @@ def encode_image_to_base64(image: Image.Image) -> str:
 def interpret_image_with_gemini(image: Image.Image, page_num: int) -> str:
     b64 = encode_image_to_base64(image)
     response = client.models.generate_content(
-        model="gemini-1.5-flash",
+        model="gemini-2.5-flash",
         contents=[
             types.Part.from_bytes(
                 data=base64.b64decode(b64),
