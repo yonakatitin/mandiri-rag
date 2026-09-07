@@ -17,16 +17,21 @@ def encode_image_to_base64(image: Image.Image) -> str:
     image.save(buffer, format="PNG")
     return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
-def interpret_page_with_gemini(image: Image.Image, page_num: int) -> str:
+import time
+
+def interpret_page_with_gemini(image: Image.Image, page_num: int, max_retries: int = 3) -> str:
     b64 = encode_image_to_base64(image)
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
-        contents=[
-            types.Part.from_bytes(
-                data=base64.b64decode(b64),
-                mime_type="image/png"
-            ),
-            """Kamu adalah analis dokumen keuangan. 
+    
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model="gemini-3.6-flash",
+                contents=[
+                    types.Part.from_bytes(
+                        data=base64.b64decode(b64),
+                        mime_type="image/png"
+                    ),
+                    """Kamu adalah analis dokumen keuangan. 
 Analisis halaman dokumen ini secara menyeluruh.
 Fokus pada:
 1. Tabel - ekstrak semua data angka dengan label yang tepat
@@ -35,9 +40,16 @@ Fokus pada:
 4. Teks penting yang tidak terbaca dari ekstraksi biasa
 
 Jawab dalam Bahasa Indonesia secara detail dan akurat."""
-        ]
-    )
-    return response.text
+                ]
+            )
+            return response.text
+        except Exception as e:
+            if attempt < max_retries - 1:
+                wait_time = 10 * (attempt + 1)
+                print(f"Retry {attempt + 1}/{max_retries} hal {page_num}, tunggu {wait_time}s...")
+                time.sleep(wait_time)
+            else:
+                raise e
 
 def extract_tables_from_page(pdf_path: str, page_num: int) -> list:
     tables_text = []
