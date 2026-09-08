@@ -39,8 +39,16 @@ Fokus pada:
 2. Grafik/Chart donut/pie - perhatikan LEGENDA warna dengan sangat teliti. 
    Cocokkan setiap warna di legenda dengan bagian chart yang sesuai.
    Sebutkan nilai persentase sesuai urutan legenda yang tertera.
-3. Infografis/Flowchart - ikuti arah panah dengan teliti dari kiri ke kanan 
-   dan atas ke bawah. Jelaskan setiap tahap secara berurutan sesuai arah panah.
+3. Infografis/Flowchart - JANGAN berasumsi arah baca dari posisi kotak semata 
+   (misalnya kiri-ke-kanan atau atas-ke-bawah). Identifikasi SETIAP anak panah 
+   satu per satu: perhatikan bentuk kepala panah (ujung yang runcing/mengarah) 
+   untuk menentukan titik awal dan titik akhir setiap panah. Tentukan kotak mana 
+   yang menjadi TITIK AWAL alur (biasanya kotak yang tidak memiliki panah masuk), 
+   lalu telusuri urutan langkah dengan mengikuti kepala panah dari kotak tersebut 
+   hingga ke kotak terakhir (yang tidak memiliki panah keluar). Sebelum menjawab, 
+   verifikasi ulang arah setiap panah yang kamu identifikasi — pastikan urutan 
+   langkah yang kamu jelaskan benar-benar konsisten dengan arah kepala panah yang 
+   terlihat di gambar, bukan asumsi pola bacaan umum.
 4. Teks penting lainnya
 
 Jawab dalam Bahasa Indonesia secara detail dan akurat."""
@@ -100,7 +108,7 @@ def parse_pdf(pdf_path: str) -> list:
         # 3. Render halaman sebagai gambar dan kirim ke Gemini Vision
         print(f"Menginterpretasi visual halaman {page_label}...")
         try:
-            mat = fitz.Matrix(2, 2)  # scale 2x untuk kualitas lebih baik
+            mat = fitz.Matrix(3, 3)  # scale 3x untuk kualitas lebih baik, terutama detail panah
             pix = page.get_pixmap(matrix=mat)
             img_bytes = pix.tobytes("png")
             image = Image.open(io.BytesIO(img_bytes))
