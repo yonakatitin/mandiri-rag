@@ -26,7 +26,7 @@ def interpret_page_with_gemini(image: Image.Image, page_num: int, max_retries: i
         try:
             response = client.models.generate_content(
                 # model="gemini-3.6-flash",
-                model="gemini-2.5-flash-lite",
+                model="gemini-3.5-flash-lite",
                 contents=[
                     types.Part.from_bytes(
                         data=base64.b64decode(b64),
