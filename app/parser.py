@@ -36,9 +36,12 @@ def interpret_page_with_gemini(image: Image.Image, page_num: int, max_retries: i
 Analisis halaman dokumen ini secara menyeluruh.
 Fokus pada:
 1. Tabel - ekstrak semua data angka dengan label yang tepat
-2. Grafik/Chart - deskripsikan semua nilai, persentase, dan label dengan tepat sesuai warna/posisi
-3. Infografis - jelaskan alur atau informasi secara detail dan berurutan
-4. Teks penting yang tidak terbaca dari ekstraksi biasa
+2. Grafik/Chart donut/pie - perhatikan LEGENDA warna dengan sangat teliti. 
+   Cocokkan setiap warna di legenda dengan bagian chart yang sesuai.
+   Sebutkan nilai persentase sesuai urutan legenda yang tertera.
+3. Infografis/Flowchart - ikuti arah panah dengan teliti dari kiri ke kanan 
+   dan atas ke bawah. Jelaskan setiap tahap secara berurutan sesuai arah panah.
+4. Teks penting lainnya
 
 Jawab dalam Bahasa Indonesia secara detail dan akurat."""
                 ]
